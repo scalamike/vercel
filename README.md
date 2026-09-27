@@ -1,4 +1,4 @@
-# Little Paws
+# Little Paws Brand #2
 
 A small cat adoption catalog built with Next.js and PostgreSQL. This project is used to test application and database migrations away from Vercel and Supabase.
 
