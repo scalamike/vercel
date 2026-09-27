@@ -10,7 +10,7 @@ npm run db:start
 npm run dev
 ```
 
-Open http://localhost:3000. Supabase starts at http://127.0.0.1:54321; local API credentials are printed by `db:start` and the publishable key is stored in the ignored `.env.local`.
+Set `DATABASE_URL` in `.env.local` to your PostgreSQL connection string before opening http://localhost:3000. If using the local Supabase development stack, `db:start` prints its PostgreSQL connection URL; use that database URL rather than the HTTP API URL.
 
 Reset the local database to replay migrations and seeds:
 
@@ -18,19 +18,34 @@ Reset the local database to replay migrations and seeds:
 npm run db:reset
 ```
 
-## Remote Supabase
+## Server PostgreSQL
 
-Create a Supabase project, then authenticate and link it:
+The app queries PostgreSQL directly using `pg`. Configure a server-only runtime environment variable (for example, through your host's `app.yaml` environment settings):
 
-```bash
-npx supabase login
-npx supabase link --project-ref <project-ref>
-npm run db:push
+```env
+DATABASE_URL=postgresql://app_user:password@database-host:5432/database_name
 ```
 
-Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the Vercel project for Development, Preview, and Production. The app reads available cats on each request when configured; otherwise it uses the sample data in `src/app/cats.ts`.
+The database must already contain `public.cats` with the columns defined in `supabase/migrations/20260926000000_create_cats.sql`. The database user needs schema access and SELECT permission. If you imported Supabase row-level security policies, ensure they allow your application role to read available cats; the original policy targets only `anon` and `authenticated`.
 
-Run `npm run db:push` after linking to apply committed migrations to the remote database. Database migrations are intentionally separate from Vercel builds.
+The Supabase API environment variables are no longer used. Missing configuration or failed queries now raise errors instead of displaying sample data. Configure TLS according to your database provider's requirements in the connection settings.
+
+First install the PostgreSQL dependencies and keep the resulting `package.json` and lockfile changes:
+
+```bash
+npm install pg server-only
+npm install -D @types/pg
+```
+
+For subsequent deployments, install dependencies, build, and restart your application's service:
+
+```bash
+npm ci
+npm run build
+npm run start
+```
+
+The database is accessed at request time, not during the build. Database migrations remain separate from application builds; the existing `db:*` scripts are for the optional Supabase development tooling.
 
 ## Checks
 
